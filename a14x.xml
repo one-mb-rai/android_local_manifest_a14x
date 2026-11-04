@@ -3,13 +3,14 @@
   <!-- Remotes -->
   <remote name="LineageOS" fetch="https://github.com/LineageOS" clone-depth="1" />
   <remote name="devhunter1" fetch="https://github.com/devhunter1" clone-depth="1" />
+  <remote name="one-mb-rai" fetch="https://github.com/one-mb-rai" clone-depth="1" />
 
-  <!-- Device & Kernel trees by devhunter1 -->
-  <project path="device/samsung/a14x" name="android_device_samsung_a14x" remote="devhunter1" revision="lineage-23.2" />
-  <project path="device/samsung/s5e8535-common" name="android_device_samsung_s5e8535-common" remote="devhunter1" revision="lineage-23.2" />
-  <project path="vendor/samsung/a14x" name="android_vendor_samsung_a14x" remote="devhunter1" revision="lineage-24.0" />
-  <project path="vendor/samsung/s5e8535-common" name="android_vendor_samsung_s5e8535-common" remote="devhunter1" revision="lineage-24.0" />
-  <project path="kernel/samsung/s5e8535" name="android_kernel_samsung_s5e8535" remote="devhunter1" revision="lineage-23.2" />
+  <!-- Device & Kernel trees (one-mb-rai forks with Android 16 LineageOS 23.2 fixes) -->
+  <project path="device/samsung/a14x" name="android_device_samsung_a14x" remote="one-mb-rai" revision="lineage-23.2" />
+  <project path="device/samsung/s5e8535-common" name="android_device_samsung_s5e8535-common" remote="one-mb-rai" revision="lineage-23.2" />
+  <project path="vendor/samsung/a14x" name="android_vendor_samsung_a14x" remote="one-mb-rai" revision="lineage-23.2" />
+  <project path="vendor/samsung/s5e8535-common" name="android_vendor_samsung_s5e8535-common" remote="one-mb-rai" revision="lineage-23.2" />
+  <project path="kernel/samsung/s5e8535" name="android_kernel_samsung_s5e8535" remote="one-mb-rai" revision="lineage-23.2" />
 
   <!-- Hardware trees by devhunter1 -->
   <project path="hardware/samsung_slsi-linaro/graphics" name="android_hardware_samsung_slsi-linaro_graphics" remote="devhunter1" revision="lineage-23.2" />
