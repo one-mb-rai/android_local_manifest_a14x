@@ -1,0 +1,101 @@
+From 9cf572b4aa39bc1f4f93a31a88fa94722b1d9186 Mon Sep 17 00:00:00 2001
+From: Amit Rai <onembrai@gmail.com>
+Date: Wed, 4 Nov 2026 19:22:20 +0530
+Subject: [PATCH] init: Suppress fatal recovery reboots in
+ ExecVdcRebootOnFailure and FscryptSetDirectoryPolicy
+
+Change-Id: I4ff04a920e61249e6df2cb82733054bd7a9648c2
+---
+ init/Android.bp       |  4 ++--
+ init/builtins.cpp     | 16 +++-------------
+ init/reboot_utils.cpp |  2 +-
+ init/selinux.cpp      |  4 ++--
+ 4 files changed, 8 insertions(+), 18 deletions(-)
+
+diff --git a/init/Android.bp b/init/Android.bp
+index 3e2fb076b..ca93c1041 100644
+--- a/init/Android.bp
++++ b/init/Android.bp
+@@ -146,7 +146,7 @@ libinit_cc_defaults {
+                 "-UALLOW_PERMISSIVE_SELINUX",
+                 "-DALLOW_PERMISSIVE_SELINUX=1",
+                 "-UREBOOT_BOOTLOADER_ON_PANIC",
+-                "-DREBOOT_BOOTLOADER_ON_PANIC=1",
++                "-DREBOOT_BOOTLOADER_ON_PANIC=0",
+                 "-UWORLD_WRITABLE_KMSG",
+                 "-DWORLD_WRITABLE_KMSG=1",
+                 "-UDUMP_ON_UMOUNT_FAILURE",
+@@ -461,7 +461,7 @@ init_first_stage_cc_defaults {
+                 "-DALLOW_PERMISSIVE_SELINUX=1",
+ 
+                 "-UREBOOT_BOOTLOADER_ON_PANIC",
+-                "-DREBOOT_BOOTLOADER_ON_PANIC=1",
++                "-DREBOOT_BOOTLOADER_ON_PANIC=0",
+ 
+                 "-UWORLD_WRITABLE_KMSG",
+                 "-DWORLD_WRITABLE_KMSG=1",
+diff --git a/init/builtins.cpp b/init/builtins.cpp
+index 4cf2b3862..c1543c533 100644
+--- a/init/builtins.cpp
++++ b/init/builtins.cpp
+@@ -431,8 +431,8 @@ static Result<void> make_dir_with_options(const MkdirOptions& options) {
+     }
+     if (IsFbeEnabled()) {
+         if (!FscryptSetDirectoryPolicy(ref_basename, options.fscrypt_action, options.target)) {
+-            return reboot_into_recovery(
+-                    {"--prompt_and_wipe_data", "--reason=set_policy_failed:"s + options.target});
++            LOG(ERROR) << "FscryptSetDirectoryPolicy failed for " << options.target << ", ignoring";
++            return {};
+         }
+     }
+     return {};
+@@ -1144,17 +1144,7 @@ static Result<void> ExecVdcRebootOnFailure(const std::string& vdc_arg) {
+     auto reboot_reason = vdc_arg + "_failed";
+ 
+     auto reboot = [reboot_reason](const std::string& message) {
+-        // TODO (b/122850122): support this in gsi
+-        if (IsFbeEnabled() && !android::gsi::IsGsiRunning()) {
+-            LOG(ERROR) << message << ": Rebooting into recovery, reason: " << reboot_reason;
+-            if (auto result = reboot_into_recovery(
+-                        {"--prompt_and_wipe_data", "--reason="s + reboot_reason});
+-                !result.ok()) {
+-                LOG(FATAL) << "Could not reboot into recovery: " << result.error();
+-            }
+-        } else {
+-            LOG(ERROR) << "Failure (reboot suppressed): " << reboot_reason;
+-        }
++        LOG(ERROR) << message << ": Failure (reboot suppressed): " << reboot_reason;
+     };
+ 
+     std::vector<std::string> args = {"exec", "/system/bin/vdc", "--wait", "cryptfs", vdc_arg};
+diff --git a/init/reboot_utils.cpp b/init/reboot_utils.cpp
+index 85a707bfd..84a729850 100644
+--- a/init/reboot_utils.cpp
++++ b/init/reboot_utils.cpp
+@@ -37,7 +37,7 @@
+ namespace android {
+ namespace init {
+ 
+-[[clang::no_destroy]] static std::string init_fatal_reboot_target = "bootloader";
++[[clang::no_destroy]] static std::string init_fatal_reboot_target = "recovery";
+ static bool init_fatal_panic = false;
+ 
+ // this needs to read the /proc/* files directly because it is called before
+diff --git a/init/selinux.cpp b/init/selinux.cpp
+index 93f6312a7..bf13b0833 100644
+--- a/init/selinux.cpp
++++ b/init/selinux.cpp
+@@ -429,8 +429,8 @@ void SelinuxSetEnforcement() {
+     bool is_enforcing = IsEnforcing();
+     if (kernel_enforcing != is_enforcing) {
+         if (security_setenforce(is_enforcing)) {
+-            PLOG(FATAL) << "security_setenforce(" << (is_enforcing ? "true" : "false")
+-                        << ") failed";
++            PLOG(ERROR) << "security_setenforce(" << (is_enforcing ? "true" : "false")
++                        << ") failed, ignoring";
+         }
+     }
+ }
+-- 
+2.53.0
+
